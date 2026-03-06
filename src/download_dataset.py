@@ -3,8 +3,8 @@
 import os
 import sys
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+# Add src to path for imports
+sys.path.insert(0, os.path.dirname(__file__))
 
 from embedding_db import init_embedding_db
 from fuzzy_clustering import init_fuzzy_clustering

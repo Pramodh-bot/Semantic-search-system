@@ -1,11 +1,11 @@
-\"\"\"Configuration for semantic search system with documented design justifications.\"\"\"
+"""Configuration for semantic search system with documented design justifications."""
 
 # ========== EMBEDDING CONFIGURATION ==========
 # Model: sentence-transformers/all-MiniLM-L6-v2
 # WHY: Pre-trained on semantic similarity (MNLI dataset - direct task alignment)
 #      22M params (lightweight), 384 dims, ~100 docs/sec on CPU
 #      80% of BERT quality at 20% computational cost
-EMBEDDING_MODEL = \"sentence-transformers/all-MiniLM-L6-v2\"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 EMBEDDING_DIMENSION = 384  # Optimal: expressive enough yet computationally efficient
 
 # Dataset Configuration
@@ -60,9 +60,9 @@ CACHE_CLUSTER_CONTEXT = True
 # - Exact nearest neighbor (no approximation error)
 # - Good for <100M vectors
 # - After L2 norm: inner product = cosine similarity (most suitable for text)
-VECTOR_DB_PATH = \"data/vector_db.faiss\"
-EMBEDDINGS_CACHE_PATH = \"data/embeddings.npy\"  # Pre-computed, cached for speed
-CLUSTERING_MODEL_PATH = \"data/clustering_model.pkl\"  # Cached clustering model
+VECTOR_DB_PATH = "data/vector_db.faiss"
+EMBEDDINGS_CACHE_PATH = "data/embeddings.npy"  # Pre-computed, cached for speed
+CLUSTERING_MODEL_PATH = "data/clustering_model.pkl"  # Cached clustering model
 
 # API Configuration
 API_HOST = "0.0.0.0"
