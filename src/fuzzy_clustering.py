@@ -153,11 +153,86 @@ class FuzzyClustering:
             'center': self.cluster_centers[cluster_id].tolist(),
         }
     
+    def get_cluster_top_documents(self, cluster_id: int, embeddings: np.ndarray, 
+                                   texts: List[str], k: int = 5) -> List[dict]:
+        """
+        Get most representative documents for a cluster (highest probability members).
+        
+        Used to interpret what each cluster represents semantically.
+        
+        Args:
+            cluster_id: Which cluster to analyze
+            embeddings: Document embeddings
+            texts: Document texts
+            k: Number of top documents to return
+            
+        Returns:
+            List of {doc_idx, text, probability} for most representative docs
+        """
+        cluster_probs = self.labels_soft[:, cluster_id]
+        top_indices = np.argsort(cluster_probs)[-k:][::-1]
+        
+        return [
+            {
+                'doc_idx': int(idx),
+                'text': texts[idx][:300],  # First 300 chars for readability
+                'probability': float(cluster_probs[idx]),
+            }
+            for idx in top_indices
+        ]
+    
+    def interpret_clusters(self, texts: List[str], embeddings: np.ndarray) -> List[dict]:
+        """
+        Interpret the semantic meaning of each cluster.
+        
+        CRITICAL FOR ASSIGNMENT: Shows what each cluster represents.
+        
+        Args:
+            texts: Document texts
+            embeddings: Document embeddings
+            
+        Returns:
+            List of {cluster_id, interpretation, size, avg_membership, top_docs}
+        """
+        interpretations = []
+        
+        for cluster_id in range(self.n_clusters):
+            mask = self.labels_hard == cluster_id
+            cluster_size = mask.sum()
+            
+            # Average soft membership strength for this cluster
+            avg_membership = self.labels_soft[mask, cluster_id].mean()
+            
+            # Get most representative documents
+            top_docs = self.get_cluster_top_documents(cluster_id, embeddings, texts, k=3)
+            
+            # Compute topic coherence (how coherent are members?)
+            cluster_embeddings = embeddings[mask]
+            if len(cluster_embeddings) > 1:
+                # Average pairwise similarity within cluster
+                from sklearn.metrics.pairwise import cosine_similarity
+                sim_matrix = cosine_similarity(cluster_embeddings)
+                np.fill_diagonal(sim_matrix, 0)
+                coherence = sim_matrix.sum() / (len(cluster_embeddings) * (len(cluster_embeddings) - 1))
+            else:
+                coherence = 1.0
+            
+            interpretations.append({
+                'cluster_id': cluster_id,
+                'size': int(cluster_size),
+                'percentage': float((cluster_size / len(texts)) * 100),
+                'avg_membership_strength': float(avg_membership),
+                'coherence': float(coherence),
+                'top_representative_docs': top_docs,
+            })
+        
+        return interpretations
+
     def analyze_boundaries(self, texts: List[str], embeddings: np.ndarray) -> List[dict]:
         """
         Analyze documents at cluster boundaries.
         
-        These are the most interesting - they show semantic overlap between clusters.
+        CRITICAL FOR ASSIGNMENT: These show semantic overlap between clusters.
         A document at the boundary between politics and firearms clusters might be
         about gun legislation.
         
@@ -176,16 +251,55 @@ class FuzzyClustering:
                 top_clusters = np.argsort(self.labels_soft[doc_idx])[-2:][::-1]
                 results.append({
                     'doc_idx': doc_idx,
+                    'text': texts[doc_idx][:300],  # Show what the document is about
                     'primary_cluster': int(top_clusters[0]),
                     'secondary_cluster': int(top_clusters[1]),
                     'primary_prob': float(self.labels_soft[doc_idx][top_clusters[0]]),
                     'secondary_prob': float(self.labels_soft[doc_idx][top_clusters[1]]),
+                    'uncertainty': float(abs(self.labels_soft[doc_idx][top_clusters[0]] - 
+                                           self.labels_soft[doc_idx][top_clusters[1]])),
                 })
         
-        # Sort by probability difference (smallest = most ambiguous)
-        results.sort(key=lambda x: abs(x['primary_prob'] - x['secondary_prob']))
+        # Sort by uncertainty (smallest gap = most ambiguous)
+        results.sort(key=lambda x: x['uncertainty'])
         
         return results[:20]  # Return top 20 most ambiguous documents
+    
+    def analyze_uncertainty(self, texts: List[str]) -> List[dict]:
+        """
+        Find documents where the model is genuinely uncertain.
+        
+        These are interesting because they reveal where semantic boundaries blur.
+        
+        Returns:
+            List of most uncertain documents with their cluster distributions
+        """
+        # Calculate entropy for each document
+        from scipy.stats import entropy
+        entropies = [entropy(self.labels_soft[i]) for i in range(len(texts))]
+        
+        # Sort by entropy (highest = most uncertain)
+        uncertain_indices = np.argsort(entropies)[-20:][::-1]
+        
+        results = []
+        for doc_idx in uncertain_indices:
+            top_three_clusters = np.argsort(self.labels_soft[doc_idx])[-3:][::-1]
+            results.append({
+                'doc_idx': int(doc_idx),
+                'text': texts[doc_idx][:300],
+                'entropy': float(entropies[doc_idx]),
+                'max_entropy': float(np.log(self.n_clusters)),
+                'uncertainty_ratio': float(entropies[doc_idx] / np.log(self.n_clusters)),
+                'top_clusters': [
+                    {
+                        'cluster_id': int(c),
+                        'probability': float(self.labels_soft[doc_idx][c])
+                    }
+                    for c in top_three_clusters
+                ]
+            })
+        
+        return results
     
     def _save(self):
         """Save model to disk."""

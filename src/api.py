@@ -258,28 +258,79 @@ async def clear_cache():
 # Bonus: Analysis Endpoints
 # ============================================================================
 
-@app.get("/clusters/info", tags=["Analysis"])
-async def get_cluster_info():
+@app.get("/clusters/analysis", tags=["Analysis"])
+async def get_cluster_analysis():
     """
-    Get information about all clusters.
+    CRITICAL FOR ASSIGNMENT: Get interpretation of what each cluster represents.
     
-    Returns composition of cluster space:
-    - Which clusters have how many documents
-    - How evenly distributed is the corpus
+    Returns:
+    - cluster_id: Cluster number (0-11)
+    - size: How many documents in this cluster
+    - percentage: Percentage of corpus
+    - avg_membership_strength: How strongly documents belong to this cluster
+    - coherence: How similar documents are within the cluster (0-1)
+    - top_representative_docs: Documents that best represent this cluster
+    
+    This shows the semantic meaning of each cluster.
     """
     if not app_state.ready:
         raise HTTPException(status_code=503, detail="System not ready")
     
-    composition = app_state.cache.get_cache_composition()
+    interpretations = app_state.clustering.interpret_clusters(
+        app_state.embedding_db.texts,
+        app_state.embedding_db.embeddings
+    )
     
     return {
+        "cluster_interpretations": interpretations,
         "total_clusters": app_state.clustering.n_clusters,
-        "corpus_size": len(app_state.embedding_db),
-        "cache_composition": composition,
-        "cluster_sizes": {
-            int(cid): int(count)
-            for cid, count in zip(*np.unique(app_state.clustering.labels_hard, return_counts=True))
-        }
+        "total_documents": len(app_state.embedding_db),
+    }
+
+
+@app.get("/clusters/boundaries", tags=["Analysis"])
+async def get_boundary_documents():
+    """
+    CRITICAL FOR ASSIGNMENT: Get documents at semantic cluster boundaries.
+    
+    These documents have HIGH UNCERTAINTY - they could belong to multiple clusters.
+    Example: "gun legislation" belongs to both politics (0.52) and firearms (0.48)
+    
+    Returns documents sorted by uncertainty (most ambiguous first).
+    """
+    if not app_state.ready:
+        raise HTTPException(status_code=503, detail="System not ready")
+    
+    boundaries = app_state.clustering.analyze_boundaries(
+        app_state.embedding_db.texts,
+        app_state.embedding_db.embeddings
+    )
+    
+    return {
+        "boundary_documents": boundaries,
+        "interpretation": "These documents sit at the boundary between clusters. "
+                        "They are interesting because they show where semantic categories overlap.",
+    }
+
+
+@app.get("/clusters/uncertainty", tags=["Analysis"])
+async def get_uncertain_documents():
+    """
+    CRITICAL FOR ASSIGNMENT: Get most uncertain documents.
+    
+    Uncertainty is measured by entropy across cluster probabilities.
+    High entropy = model doesn't know which cluster this belongs to.
+    
+    These documents are exactly the ones that reveal the true complexity of the data.
+    """
+    if not app_state.ready:
+        raise HTTPException(status_code=503, detail="System not ready")
+    
+    uncertain = app_state.clustering.analyze_uncertainty(app_state.embedding_db.texts)
+    
+    return {
+        "uncertain_documents": uncertain,
+        "note": "uncertainty_ratio of 0.5 means completely uncertain (max entropy = 0.5 * log(12))",
     }
 
 
