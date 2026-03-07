@@ -10,7 +10,7 @@ import numpy as np
 from typing import Optional, Dict, Tuple, List
 from dataclasses import dataclass, field
 from datetime import datetime
-from config import CACHE_SIMILARITY_THRESHOLD, CACHE_CLUSTER_CONTEXT
+from .config import CACHE_SIMILARITY_THRESHOLD, CACHE_CLUSTER_CONTEXT
 
 
 @dataclass

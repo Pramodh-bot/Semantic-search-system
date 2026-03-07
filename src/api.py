@@ -8,10 +8,10 @@ from sklearn.preprocessing import normalize
 import time
 
 # Import our components
-from embedding_db import init_embedding_db, EmbeddingDatabase
-from fuzzy_clustering import init_fuzzy_clustering, FuzzyClustering
-from semantic_cache import get_cache, SemanticCache
-from config import API_HOST, API_PORT
+from .embedding_db import init_embedding_db, EmbeddingDatabase
+from .fuzzy_clustering import init_fuzzy_clustering, FuzzyClustering
+from .semantic_cache import get_cache, SemanticCache
+from .config import API_HOST, API_PORT
 
 
 # ============================================================================

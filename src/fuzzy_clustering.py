@@ -7,7 +7,7 @@ from sklearn.metrics import silhouette_score
 import pickle
 import os
 from typing import Tuple, List
-from config import N_CLUSTERS, RANDOM_STATE, CLUSTERING_MODEL_PATH, EMBEDDING_DIMENSION
+from .config import N_CLUSTERS, RANDOM_STATE, CLUSTERING_MODEL_PATH, EMBEDDING_DIMENSION
 
 
 class FuzzyClustering:

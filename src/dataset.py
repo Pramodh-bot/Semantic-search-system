@@ -5,7 +5,7 @@ from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 import re
 from typing import List, Tuple
-from config import (
+from .config import (
     DATASET_SPLIT,
     MAX_DOCUMENTS,
     MIN_DOC_LENGTH,

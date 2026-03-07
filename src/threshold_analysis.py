@@ -7,7 +7,7 @@ This is a CRITICAL design experiment required by the assignment.
 
 import numpy as np
 from typing import List, Tuple, Dict
-from semantic_cache import SemanticCache
+from .semantic_cache import SemanticCache
 
 
 def analyze_threshold_sensitivity(test_queries: List[str], 

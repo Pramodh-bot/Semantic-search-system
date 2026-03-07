@@ -8,7 +8,7 @@ that distinguish that cluster from others.
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from typing import List, Dict
-from config import N_CLUSTERS
+from .config import N_CLUSTERS
 
 
 def interpret_clusters(documents: List[str], cluster_labels: np.ndarray, 

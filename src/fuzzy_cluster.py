@@ -15,7 +15,7 @@ to belong to multiple clusters simultaneously with varying degrees.
 import numpy as np
 import skfuzzy as fuzz
 from typing import Tuple
-from config import N_CLUSTERS
+from .config import N_CLUSTERS
 
 
 def run_fuzzy_clustering(embeddings: np.ndarray, n_clusters: int = N_CLUSTERS) -> Tuple[np.ndarray, np.ndarray]:

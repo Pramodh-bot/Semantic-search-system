@@ -6,8 +6,8 @@ from sentence_transformers import SentenceTransformer
 from typing import List, Tuple
 import pickle
 import os
-from config import EMBEDDING_MODEL, EMBEDDING_DIMENSION, VECTOR_DB_PATH, EMBEDDINGS_CACHE_PATH
-from dataset import load_and_preprocess_dataset
+from .config import EMBEDDING_MODEL, EMBEDDING_DIMENSION, VECTOR_DB_PATH, EMBEDDINGS_CACHE_PATH
+from .dataset import load_and_preprocess_dataset
 
 
 class EmbeddingDatabase:

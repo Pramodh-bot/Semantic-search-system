@@ -6,9 +6,9 @@ import sys
 # Add src to path for imports
 sys.path.insert(0, os.path.dirname(__file__))
 
-from embedding_db import init_embedding_db
-from fuzzy_clustering import init_fuzzy_clustering
-from config import VECTOR_DB_PATH, CLUSTERING_MODEL_PATH
+from .embedding_db import init_embedding_db
+from .fuzzy_clustering import init_fuzzy_clustering
+from .config import VECTOR_DB_PATH, CLUSTERING_MODEL_PATH
 
 
 def main():
