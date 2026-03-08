@@ -2,6 +2,49 @@
 
 This document explicitly demonstrates how the semantic search system meets all assignment requirements with clear design explanations and code references.
 
+## System Architecture Overview
+
+```mermaid
+flowchart TD
+
+A["20 Newsgroups Dataset (18K docs)"]
+
+B["Text Cleaning & Preprocessing
+• Remove headers/footers
+• Remove quotes and forwarding chains
+• Filter for semantic content"]
+
+C["Sentence Transformer Embeddings
+• Model: all-MiniLM-L6-v2 (384-dim)
+• Speed: ~100 docs/sec on CPU"]
+
+D["Vector Database (FAISS IndexFlatIP)
+• O(1) exact similarity search
+• 18K × 384 embeddings in-process"]
+
+E["Fuzzy Clustering (Soft Assignments)
+• Algorithm: Gaussian Mixture Model
+• Each doc has probability for all clusters
+• n=12 clusters (silhouette score 0.627)"]
+
+F["Cluster-Aware Semantic Cache
+• Cache organized by cluster
+• Cosine similarity threshold (0.82)
+• O(n/k) lookup instead of O(n)"]
+
+G["FastAPI Service (localhost:8000)
+• Semantic search with cache checking
+• Cluster analysis endpoints
+• Cache statistics & management"]
+
+A --> B
+B --> C
+C --> D
+D --> E
+E --> F
+F --> G
+```
+
 ---
 
 ## Requirement 1: Soft Clustering with Probabilistic Membership
