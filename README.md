@@ -222,44 +222,36 @@ This system implements a **semantic cache** that detects **similar queries** usi
 
 ### Cache Workflow
 
-```
-User Query
-    │
-    ▼
-Embedding (same model as corpus)
-    │
-    ▼
-Cluster Detection (soft assignment probabilities)
-    │
-    ├─ Cluster 1: 0.15
-    ├─ Cluster 5: 0.12 ┐
-    └─ Cluster 7: 0.68 │ Search only
-         (top 3)       │ these clusters
-    │
-    ▼
-Search Cache Within Top Clusters
-    │
-    ▼
-Similarity Check (Cosine Similarity)
-    │
-    ├─ Match found with similarity 0.89 > 0.82 threshold
-    │  │
-    │  ▼
-    │  Return Cached Result ✅ CACHE HIT
-    │
-    └─ No match above threshold
-       │
-       ▼
-       Search FAISS Index
-       │
-       ▼
-       Retrieve Top-K Results
-       │
-       ▼
-       Store in Cache (for future queries)
-       │
-       ▼
-       Return Results ❌ CACHE MISS
+```mermaid
+flowchart TD
+    A["📝 User Query"]
+    B["🔢 Embed Query<br/>(same model as corpus)"]
+    C["🎯 Get Cluster Assignment<br/>(soft probabilities)"]
+    D["Select Top 3 Clusters<br/>by probability"]
+    E["🔍 Search Cache<br/>in Selected Clusters"]
+    F{"Similarity ≥<br/>0.82 threshold?"}
+    G["✅ CACHE HIT<br/>Return Cached Result"]
+    H["🔎 Search FAISS Index<br/>for Top-K matches"]
+    I["💾 Store Result in Cache<br/>(for future queries)"]
+    J["❌ CACHE MISS<br/>Return Fetched Results"]
+    K["📊 Update Statistics<br/>(hits/misses)"]
+    
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F -->|Yes| G
+    F -->|No| H
+    H --> I
+    I --> J
+    G --> K
+    J --> K
+    K --> L["✓ Response to User"]
+    
+    style G fill:#d4edda
+    style J fill:#f8d7da
+    style K fill:#d1ecf1
 ```
 
 ### Cluster-Aware Lookup Efficiency

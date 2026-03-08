@@ -352,6 +352,41 @@ The semantic cache should leverage cluster structure for efficiency. When a quer
 
 ### Implementation
 
+#### Cache Lookup Comparison
+
+```mermaid
+flowchart LR
+    subgraph Naive["❌ NAIVE APPROACH<br/>(O(n) Complexity)"]
+        N1["Query Arrives"]
+        N2["Compute Embedding"]
+        N3["Search ALL 1000<br/>Cache Entries"]
+        N4["1000 Similarity<br/>Checks"]
+        N5["Return Result"]
+        N1 --> N2 --> N3 --> N4 --> N5
+    end
+    
+    subgraph Cluster["✅ CLUSTER-AWARE<br/>(O(n/k) Complexity)"]
+        C1["Query Arrives"]
+        C2["Compute Embedding"]
+        C3["Get Cluster<br/>Probabilities"]
+        C4["Select Top 3<br/>Clusters"]
+        C5["Search ~250<br/>Cache Entries"]
+        C6["~250 Similarity<br/>Checks"]
+        C7["Return Result"]
+        C1 --> C2 --> C3 --> C4 --> C5 --> C6 --> C7
+    end
+    
+    style N3 fill:#ffcccc
+    style N4 fill:#ffcccc
+    style C5 fill:#ccffcc
+    style C6 fill:#ccffcc
+```
+
+**Speedup**: ~4x faster (1000 → 250 checks)  
+**For larger caches** (10K entries): ~10-12x faster
+
+#### Algorithm Details
+
 **File**: `src/semantic_cache.py`
 
 #### Original (Inefficient) Approach:
