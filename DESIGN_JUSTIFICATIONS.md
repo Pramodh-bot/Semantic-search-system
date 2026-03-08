@@ -354,59 +354,36 @@ The semantic cache should leverage cluster structure for efficiency. When a quer
 
 #### Cache Lookup Efficiency Comparison
 
-**❌ NAIVE APPROACH (Without Clustering)**
-```
-Query Arrives
-    ↓
-Compute Embedding (384-dim vector)
-    ↓
-Search ALL 1000 Cached Queries
-    ├─ Entry 1: Compute cosine similarity
-    ├─ Entry 2: Compute cosine similarity
-    ├─ Entry 3: Compute cosine similarity
-    │  ...
-    └─ Entry 1000: Compute cosine similarity
-    ↓
-Complexity: O(n) = 1000 similarity computations
-Time: ~500ms per query (on CPU)
-```
-
-**✅ CLUSTER-AWARE APPROACH (Recommended)**
-```
-Query Arrives
-    ↓
-Compute Embedding (384-dim vector)
-    ↓
-Get Cluster Probabilities
-    ├─ Cluster 0: 0.05
-    ├─ Cluster 1: 0.08
-    ├─ Cluster 2: 0.72  ← TOP 1
-    ├─ Cluster 3: 0.03
-    ├─ Cluster 5: 0.08  ← TOP 2
-    └─ Cluster 7: 0.04  ← TOP 3
-    ↓
-Search Only Top 3 Clusters (~250 entries)
-    ├─ Cluster 2, Entry 1: Compute cosine similarity
-    ├─ Cluster 2, Entry 2: Compute cosine similarity
-    │  ...
-    ├─ Cluster 5, Entry 50: Compute cosine similarity
-    └─ Cluster 7, Entry 45: Compute cosine similarity
-    ↓
-Complexity: O(n/k) ≈ 250 similarity computations
-Time: ~50ms per query (on CPU)
-SPEEDUP: ~10x FASTER
+```mermaid
+flowchart LR
+    subgraph Naive["❌ NAIVE APPROACH - O(n)"]
+        N1["Query"]
+        N2["Embed"]
+        N3["Search ALL 1000<br/>Entries"]
+        N4["1000 Checks"]
+        N1 --> N2 --> N3 --> N4
+    end
+    
+    subgraph Smart["✅ CLUSTER-AWARE - O(n/k)"]
+        S1["Query"]
+        S2["Embed"]
+        S3["Get Cluster Probs"]
+        S4["Top 3 Clusters"]
+        S5["~250 Entries"]
+        S6["250 Checks"]
+        S1 --> S2 --> S3 --> S4 --> S5 --> S6
+    end
+    
+    style N3 fill:#ffcccc
+    style N4 fill:#ffcccc
+    style S5 fill:#ccffcc
+    style S6 fill:#ccffcc
 ```
 
-**Efficiency Gain Summary:**
-| Metric | Naive | Cluster-Aware | Improvement |
-|--------|-------|---------------|-------------|
-| Cache Size | 1000 | 1000 | Same |
-| Entries Searched | 1000 | ~250 | 4x reduction |
-| Operations | O(n) | O(n/k) | k=12 speedup |
-| Latency | 500ms | 50ms | 10x faster |
-| Hit Rate @ 0.82 | 35% | 35% | Same accuracy |
-
-**Key Insight**: Clustering doesn't just organize data—it fundamentally improves lookup performance by **pruning the search space by 75%**.
+**Performance Metrics:**
+- **Naive Approach**: O(n) = 1000 similarity checks = ~500ms
+- **Cluster-Aware**: O(n/k) = 250 checks = ~50ms
+- **Speedup**: ~10x faster with 75% fewer operations
 
 #### Algorithm Details
 

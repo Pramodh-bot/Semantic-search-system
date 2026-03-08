@@ -222,83 +222,65 @@ This system implements a **semantic cache** that detects **similar queries** usi
 
 ### Cache Workflow
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        USER SUBMITS QUERY                         │
-└──────────────────┬───────────────────────────────────────────────┘
-                   │
-                   ▼
-        ┌─────────────────────────────────┐
-        │  Step 1: Embed the Query        │
-        │  • Use Sentence Transformer     │
-        │  • Get 384-dim vector           │
-        │  • Normalize (L2)               │
-        └─────────────────┬───────────────┘
-                          │
-                          ▼
-        ┌─────────────────────────────────────────┐
-        │  Step 2: Soft Cluster Assignment        │
-        │  • GMM predicts probability for cluster │
-        │  • Query gets distribution over 12 cls  │
-        │  • Example: [0.05, 0.72, 0.08, ...]     │
-        └─────────────────┬───────────────────────┘
-                          │
-                          ▼
-        ┌──────────────────────────────────────────┐
-        │  Step 3: Identify Relevant Clusters      │
-        │  • Select top 3 by probability           │
-        │  • Only search those clusters' caches    │
-        │  • Reduces search space by 12x           │
-        └─────────────────┬────────────────────────┘
-                          │
-                          ▼
-        ┌──────────────────────────────────────────┐
-        │  Step 4: Search Cache (Cluster-Aware)    │
-        │  • Lookup query in selected clusters     │
-        │  • Compute cosine similarity with cached │
-        │  • Track best match                      │
-        └──────────┬───────────────────┬───────────┘
-                   │                   │
-        [Best Match Found?]   [No Match Found]
-           │                      │
-           ▼                      ▼
-     [Similarity ≥    [Cache Miss]
-      0.82?]             │
-      │  │               │
-    Yes No               │
-      │  │               │
-      │  └──────────┬────┘
-      │             │
-      ▼             ▼
-   ┌────┐    ┌──────────────────┐
-   │HIT!│    │Search FAISS Index │
-   └─┬──┘    │Retrieve Top-K     │
-     │       │Documents          │
-     │       └────────┬──────────┘
-     │                │
-     │                ▼
-     │       ┌────────────────────┐
-     │       │Generate Result &   │
-     │       │Store in Cache      │
-     │       │(for next time)     │
-     │       └────────┬───────────┘
-     │                │
-     └────────┬───────┘
-              │
-              ▼
-     ┌────────────────────────┐
-     │ Update Statistics      │
-     │ • Increment hit/miss   │
-     │ • Track response time  │
-     │ • Log cache metrics    │
-     └────────┬───────────────┘
-              │
-              ▼
-     ┌────────────────────────┐
-     │ Return Results to User │
-     │ ✓ Cache hit rate: 35%  │
-     │ ✓ Avg latency: 45ms    │
-     └────────────────────────┘
+```mermaid
+flowchart TD
+
+A["User Submits Query"]
+
+B["Step 1: Embed Query
+• Sentence Transformer
+• 384-dim vector
+• L2 Normalization"]
+
+C["Step 2: Soft Cluster Assignment
+• GMM predicts probabilities
+• Distribution across 12 clusters
+Example: [0.05, 0.72, 0.08, …]"]
+
+D["Step 3: Identify Relevant Clusters
+• Select Top-3 clusters
+• Reduce search space"]
+
+E["Step 4: Search Cluster-Aware Cache
+• Search selected clusters
+• Compute cosine similarity
+• Track best match"]
+
+F{"Best Match ≥ 0.82 ?"}
+
+G["Cache HIT<br/>Return Cached Result"]
+
+H["Cache MISS"]
+
+I["Search FAISS Index"]
+
+J["Retrieve Top-K Documents"]
+
+K["Store Result in Cache<br/>(for future queries)"]
+
+L["Update Statistics<br/>• Hit / Miss count<br/>• Response time<br/>• Cache metrics"]
+
+M["Return Results to User<br/>Hit rate ~35%<br/>Avg latency ~45 ms"]
+
+A --> B
+B --> C
+C --> D
+D --> E
+E --> F
+
+F -->|Yes| G
+F -->|No| H
+
+H --> I
+I --> J
+J --> K
+K --> L
+G --> L
+L --> M
+
+style G fill:#d4edda
+style H fill:#f8d7da
+style M fill:#d1ecf1
 ```
 
 ### Cluster-Aware Lookup Efficiency
