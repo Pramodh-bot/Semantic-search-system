@@ -222,36 +222,83 @@ This system implements a **semantic cache** that detects **similar queries** usi
 
 ### Cache Workflow
 
-```mermaid
-flowchart TD
-    A["📝 User Query"]
-    B["🔢 Embed Query<br/>(same model as corpus)"]
-    C["🎯 Get Cluster Assignment<br/>(soft probabilities)"]
-    D["Select Top 3 Clusters<br/>by probability"]
-    E["🔍 Search Cache<br/>in Selected Clusters"]
-    F{"Similarity ≥<br/>0.82 threshold?"}
-    G["✅ CACHE HIT<br/>Return Cached Result"]
-    H["🔎 Search FAISS Index<br/>for Top-K matches"]
-    I["💾 Store Result in Cache<br/>(for future queries)"]
-    J["❌ CACHE MISS<br/>Return Fetched Results"]
-    K["📊 Update Statistics<br/>(hits/misses)"]
-    
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F -->|Yes| G
-    F -->|No| H
-    H --> I
-    I --> J
-    G --> K
-    J --> K
-    K --> L["✓ Response to User"]
-    
-    style G fill:#d4edda
-    style J fill:#f8d7da
-    style K fill:#d1ecf1
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        USER SUBMITS QUERY                         │
+└──────────────────┬───────────────────────────────────────────────┘
+                   │
+                   ▼
+        ┌─────────────────────────────────┐
+        │  Step 1: Embed the Query        │
+        │  • Use Sentence Transformer     │
+        │  • Get 384-dim vector           │
+        │  • Normalize (L2)               │
+        └─────────────────┬───────────────┘
+                          │
+                          ▼
+        ┌─────────────────────────────────────────┐
+        │  Step 2: Soft Cluster Assignment        │
+        │  • GMM predicts probability for cluster │
+        │  • Query gets distribution over 12 cls  │
+        │  • Example: [0.05, 0.72, 0.08, ...]     │
+        └─────────────────┬───────────────────────┘
+                          │
+                          ▼
+        ┌──────────────────────────────────────────┐
+        │  Step 3: Identify Relevant Clusters      │
+        │  • Select top 3 by probability           │
+        │  • Only search those clusters' caches    │
+        │  • Reduces search space by 12x           │
+        └─────────────────┬────────────────────────┘
+                          │
+                          ▼
+        ┌──────────────────────────────────────────┐
+        │  Step 4: Search Cache (Cluster-Aware)    │
+        │  • Lookup query in selected clusters     │
+        │  • Compute cosine similarity with cached │
+        │  • Track best match                      │
+        └──────────┬───────────────────┬───────────┘
+                   │                   │
+        [Best Match Found?]   [No Match Found]
+           │                      │
+           ▼                      ▼
+     [Similarity ≥    [Cache Miss]
+      0.82?]             │
+      │  │               │
+    Yes No               │
+      │  │               │
+      │  └──────────┬────┘
+      │             │
+      ▼             ▼
+   ┌────┐    ┌──────────────────┐
+   │HIT!│    │Search FAISS Index │
+   └─┬──┘    │Retrieve Top-K     │
+     │       │Documents          │
+     │       └────────┬──────────┘
+     │                │
+     │                ▼
+     │       ┌────────────────────┐
+     │       │Generate Result &   │
+     │       │Store in Cache      │
+     │       │(for next time)     │
+     │       └────────┬───────────┘
+     │                │
+     └────────┬───────┘
+              │
+              ▼
+     ┌────────────────────────┐
+     │ Update Statistics      │
+     │ • Increment hit/miss   │
+     │ • Track response time  │
+     │ • Log cache metrics    │
+     └────────┬───────────────┘
+              │
+              ▼
+     ┌────────────────────────┐
+     │ Return Results to User │
+     │ ✓ Cache hit rate: 35%  │
+     │ ✓ Avg latency: 45ms    │
+     └────────────────────────┘
 ```
 
 ### Cluster-Aware Lookup Efficiency
