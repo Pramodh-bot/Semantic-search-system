@@ -277,10 +277,6 @@ J --> K
 K --> L
 G --> L
 L --> M
-
-style G fill:#d4edda
-style H fill:#f8d7da
-style M fill:#d1ecf1
 ```
 
 ### Cluster-Aware Lookup Efficiency
